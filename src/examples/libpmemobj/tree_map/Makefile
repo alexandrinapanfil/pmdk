@@ -8,7 +8,11 @@ LIBRARIES = ctree_map btree_map rtree_map rbtree_map
 
 LIBS = -lpmemobj
 
+ifeq ($(SPP_OFF),1)
 include ../../Makefile.inc
+else
+include ../../Makefile_spp.inc
+endif
 
 libctree_map.o: ctree_map.o
 libbtree_map.o: btree_map.o

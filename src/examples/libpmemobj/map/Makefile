@@ -29,7 +29,7 @@ endif
 ifeq ($(SPP_OFF),1)
 include ../../Makefile.inc
 else
-include ../../Makefile_spp.inc
+include ../../Makefile_map_spp.inc
 endif
 
 CFLAGS += -I../

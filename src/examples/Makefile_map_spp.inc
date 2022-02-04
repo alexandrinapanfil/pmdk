@@ -51,8 +51,6 @@ WRAP_LIST=-Wl,-wrap,free -Wl,-wrap,strcpy -Wl,-wrap,strcmp \
            -Wl,-wrap,strtol -Wl,-wrap,strlen -Wl,-wrap,strchrnul
 
 CFLAGS=${OPT_LEVEL} \
--Xclang -load -Xclang ${LLVMROOT}/build/lib/LLVMSPP.so  \
--include ${SPPLIBSRC}/spp.h \
 -DTAG_BITS=24
 
 CXXFLAGS=$(CFLAGS)
