@@ -125,6 +125,33 @@ endif
 #if SPP_OFF is set, enable PMDK's original functions
 ifeq ($(SPP_OFF),1)
 CXXFLAGS += -DSPP_OFF
+else
+CLANG:=$(shell which clang)
+CLANGPP:=$(shell which clang++)
+
+CC=$(CLANG)
+CXX=$(CLANGPP)
+LD=$(shell which ld.gold)
+AR:=$(shell which llvm-ar)
+
+SPPROOT:=$(TOP)/..
+
+OPT_LEVEL=-O1
+
+SPPLIB=${SPPROOT}/runtime
+SPPLIBOBJ=${SPPLIB}/obj
+
+WRAP_LIST=-Wl,-wrap,free -Wl,-wrap,strcpy -Wl,-wrap,strcmp \
+           -Wl,-wrap,strncpy -Wl,-wrap,strncmp -Wl,-wrap,memcmp \
+           -Wl,-wrap,memchr -Wl,-wrap,strchr -Wl,-wrap,strncat \
+           -Wl,-wrap,strtol -Wl,-wrap,strlen -Wl,-wrap,strchrnul
+
+LDFLAGS+=-flto \
+-fuse-ld=gold \
+$(WRAP_LIST) "${SPPLIBOBJ}/wrappers.o" \
+-Xlinker "${SPPLIBOBJ}/spp_hookobj.o" \
+-DTAG_BITS=24
+
 endif
 
 #if TAG_BITS is defined, propagate its value
