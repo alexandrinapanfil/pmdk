@@ -150,7 +150,7 @@ LDFLAGS+=-flto \
 -fuse-ld=gold \
 $(WRAP_LIST) "${SPPLIBOBJ}/wrappers.o" \
 -Xlinker "${SPPLIBOBJ}/spp_hookobj.o" \
--DTAG_BITS=24
+-DTAG_BITS=$(TAG_BITS)
 
 endif
 

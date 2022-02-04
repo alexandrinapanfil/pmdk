@@ -51,7 +51,7 @@ WRAP_LIST=-Wl,-wrap,free -Wl,-wrap,strcpy -Wl,-wrap,strcmp \
            -Wl,-wrap,strtol -Wl,-wrap,strlen -Wl,-wrap,strchrnul
 
 CFLAGS=${OPT_LEVEL} \
--DTAG_BITS=24
+-DTAG_BITS=$(TAG_BITS)
 
 CXXFLAGS=$(CFLAGS)
 
@@ -59,7 +59,7 @@ LDFLAGS+=-flto \
 -fuse-ld=gold \
 $(WRAP_LIST) "${SPPLIBOBJ}/wrappers.o" \
 -Xlinker "${SPPLIBOBJ}/spp_hookobj.o" \
--DTAG_BITS=24
+-DTAG_BITS=$(TAG_BITS)
 
 ### End of SPP Specific Definitions
 

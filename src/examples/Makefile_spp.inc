@@ -53,7 +53,7 @@ WRAP_LIST=-Wl,-wrap,free -Wl,-wrap,strcpy -Wl,-wrap,strcmp \
 CFLAGS=${OPT_LEVEL} \
 -Xclang -load -Xclang ${LLVMROOT}/build/lib/LLVMSPP.so  \
 -include ${SPPLIBSRC}/spp.h \
--DTAG_BITS=24
+-DTAG_BITS=$(TAG_BITS)
 
 CXXFLAGS=$(CFLAGS)
 
@@ -61,7 +61,7 @@ LDFLAGS+=-flto \
 -fuse-ld=gold \
 $(WRAP_LIST) "${SPPLIBOBJ}/wrappers.o" \
 -Xlinker "${SPPLIBOBJ}/spp_hookobj.o" \
--DTAG_BITS=24
+-DTAG_BITS=$(TAG_BITS)
 
 ### End of SPP Specific Definitions
 
