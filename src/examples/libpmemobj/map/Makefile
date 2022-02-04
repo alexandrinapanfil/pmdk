@@ -26,7 +26,11 @@ ifeq ($(LIBUV),y)
 LIBS += $(shell $(PKG_CONFIG) --libs libuv)
 endif
 
+ifeq ($(SPP_OFF),1)
 include ../../Makefile.inc
+else
+include ../../Makefile_spp.inc
+endif
 
 CFLAGS += -I../
 CFLAGS += -I../hashmap
