@@ -132,6 +132,16 @@ int pmemobj_tx_add_range(PMEMoid oid, uint64_t hoff, size_t size) {
  * *ptr is derived from pmemobj_direct function -- compiler pass is responsible for the handling 
  */
 int pmemobj_tx_add_range_direct(const void *ptr, size_t size) {
+#ifndef SPP_OFF
+    uintptr_t tag = (((uintptr_t)ptr) >> ADDRESS_BITS) + size - 1;
+    if (tag & MAX_OBJ_SIZE) {
+        _exit(1);
+    }
+    uintptr_t ptrval = ((((uintptr_t)ptr)<<(TAG_BITS + OVERFLOW_BITS))>>(TAG_BITS + OVERFLOW_BITS));
+    
+    return pmemobj_tx_add_range_direct_unsafe((void*)ptrval, size);
+#endif
+
     return pmemobj_tx_add_range_direct_unsafe(ptr, size);
 }
 
