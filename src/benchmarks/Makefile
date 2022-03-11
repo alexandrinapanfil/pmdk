@@ -122,15 +122,10 @@ CXXFLAGS += -fsanitize=$(SANITIZE)
 LDFLAGS += -fsanitize=$(SANITIZE)
 endif
 
-#if SPP_OFF is set, enable PMDK's original functions
-ifeq ($(SPP_OFF),1)
-CXXFLAGS += -DSPP_OFF
-endif
-
 #if TAG_BITS is defined, propagate its value
-ifneq ($(TAG_BITS), )
+ifneq ($(TAG_BITS), ) #----------------------------------
 CXXFLAGS += -DTAG_BITS=$(TAG_BITS)
-endif
+endif #----------------------------------
 
 ifeq ($(BUILD_RPMEM),y)
 SRC += rpmem.cpp
@@ -171,12 +166,37 @@ CXXFLAGS += $(EXTRA_CXXFLAGS)
 
 objdir=.
 
-%.o: %.cpp Makefile
-	$(call check-cstyle, $<)
-	@mkdir -p .deps
-	$(CXX) -MD -c -o $@ $(CXXFLAGS) $(call coverage-path, $<)
-	$(call check-os, $@, $<)
-	$(create-deps)
+#if SPP_OFF is set, enable PMDK's original functions
+ifeq ($(SPP_OFF),1) #----------------------------------
+CXXFLAGS += -DSPP_OFF
+else #----------------------------------
+SPPROOT:= $(TOP)/..
+LLVMROOT:=$(SPPROOT)/llvm-project
+SPPLIB:=$(SPPROOT)/runtime
+SPPLIBSRC:=$(SPPLIB)/src
+SPPLIBOBJ:=$(SPPLIB)/obj
+
+# https://llvm.org/docs/GoldPlugin.html#quickstart-for-using-lto-with-autotooled-projects
+CC:=$(shell which clang)
+CXX:=$(shell which clang++)
+NM:=$(shell which llvm-nm)
+
+WRAP_LIST:=-Wl,-wrap,free -Wl,-wrap,strcpy -Wl,-wrap,strcmp \
+           -Wl,-wrap,strncpy -Wl,-wrap,strncmp -Wl,-wrap,memcmp \
+           -Wl,-wrap,memchr -Wl,-wrap,strchr -Wl,-wrap,strncat \
+           -Wl,-wrap,strtol -Wl,-wrap,strlen -Wl,-wrap,strchrnul \
+           -Wl,-wrap,strcat -Wl,-wrap,snprintf \
+           -Wl,-wrap,memcpy -Wl,-wrap,memset -Wl,-wrap,memmove
+OPT_LEVEL:=-O1
+FORTIFY:=-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
+
+CXXFLAGS += -flto -fno-builtin $(OPT_LEVEL) $(FORTIFY)
+CXXFLAGS += -Xclang -load -Xclang $(LLVMROOT)/build/lib/LLVMSPP.so
+BUILD_EXEC_FLAGS := $(WRAP_LIST) $(SPPLIBOBJ)/wrappers.o -Xlinker "${SPPLIBOBJ}/spp_hookobj.o"
+
+INCS += -I$(SPPLIBSRC)/spp.h
+LDFLAGS += -fuse-ld=gold
+endif #----------------------------------
 
 %.htmp: %.h
 	$(call check-cstyle, $<, $@)
@@ -184,8 +204,28 @@ objdir=.
 %.hpptmp: %.hpp
 	$(call check-cstyle, $<, $@)
 
+#if SPP_OFF is set, enable PMDK's original functions
+ifeq ($(SPP_OFF),1) #----------------------------------
+%.o: %.cpp Makefile
+	$(call check-cstyle, $<)
+	@mkdir -p .deps
+	$(CXX) -MD -c -o $@ $(CXXFLAGS) $(call coverage-path, $<)
+	$(call check-os, $@, $<)
+	$(create-deps)
+
 $(BENCHMARK): $(TMP_HEADERS) $(OBJS) $(LIBMAP)
 	$(CXX) -o $@ $(LDFLAGS) $(OBJS) $(LIBMAP) $(LIBS)
+else #----------------------------------
+%.o: %.cpp Makefile
+	$(call check-cstyle, $<)
+	@mkdir -p .deps
+	$(CXX) -MD -c -o $@ $(CXXFLAGS) $(call coverage-path, $<)
+	$(call nm=$(NM) check-os, $@, $<)
+	$(create-deps)
+
+$(BENCHMARK): $(TMP_HEADERS) $(OBJS) $(LIBMAP)
+	$(CXX) $(CXXFLAGS) $(BUILD_EXEC_FLAGS) -o $@ $(LDFLAGS) $(OBJS) $(LIBMAP) $(LIBS)
+endif #----------------------------------
 
 $(LIBMAP):
 	$(MAKE) -C $(LIBMAP_DIR) map

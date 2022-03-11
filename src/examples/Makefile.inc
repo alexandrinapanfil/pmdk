@@ -27,10 +27,39 @@ INCS = -I$(INCDIR) -I. -I$(TOP_SRC)/examples $(OS_INCS)
 LIBS += $(OS_LIBS) $(LIBUUID)
 
 #if SPP_OFF is set, enable PMDK's original functions
-ifeq ($(SPP_OFF),1)
+ifeq ($(SPP_OFF),1) #----------------------------------
 CFLAGS += -DSPP_OFF
 CXXFLAGS += -DSPP_OFF
-endif
+else #----------------------------------
+SPPROOT:= $(TOP)/..
+LLVMROOT:=$(SPPROOT)/llvm-project
+SPPLIB:=$(SPPROOT)/runtime
+SPPLIBSRC:=$(SPPLIB)/src
+SPPLIBOBJ:=$(SPPLIB)/obj
+
+# https://llvm.org/docs/GoldPlugin.html#quickstart-for-using-lto-with-autotooled-projects
+CC:=$(shell which clang)
+CXX:=$(shell which clang++)
+AR:=$(shell which llvm-ar)
+NM:=$(shell which llvm-nm)
+#LD:=$(shell which ld.gold)
+
+WRAP_LIST:=-Wl,-wrap,free -Wl,-wrap,strcpy -Wl,-wrap,strcmp \
+           -Wl,-wrap,strncpy -Wl,-wrap,strncmp -Wl,-wrap,memcmp \
+           -Wl,-wrap,memchr -Wl,-wrap,strchr -Wl,-wrap,strncat \
+           -Wl,-wrap,strtol -Wl,-wrap,strlen -Wl,-wrap,strchrnul \
+           -Wl,-wrap,strcat -Wl,-wrap,snprintf \
+           -Wl,-wrap,memcpy -Wl,-wrap,memset -Wl,-wrap,memmove
+OPT_LEVEL:=-O1
+FORTIFY:=-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
+
+CFLAGS += -flto -fno-builtin $(OPT_LEVEL) $(FORTIFY)
+CFLAGS += -Xclang -load -Xclang $(LLVMROOT)/build/lib/LLVMSPP.so
+BUILD_EXEC_FLAGS := $(WRAP_LIST) $(SPPLIBOBJ)/wrappers.o -Xlinker "${SPPLIBOBJ}/spp_hookobj.o"
+
+INCS += -I$(SPPLIBSRC)/spp.h
+LDFLAGS += -fuse-ld=gold
+endif #----------------------------------
 
 #if TAG_BITS is defined, propagate its value
 ifneq ($(TAG_BITS), )
@@ -64,13 +93,19 @@ STATIC_LIBRARIES = $(addprefix lib, $(addsuffix .a, $(LIBRARIES)))
 
 all-dirs clean-dirs clobber-dirs cstyle-dirs format-dirs sparse-dirs: $(DIRS)
 all-progs: $(PROGS)
-all-libraries: $(DYNAMIC_LIBRARIES) $(STATIC_LIBRARIES)
 
+ifeq ($(SPP_OFF),1) #----------------------------------
+all-libraries: $(DYNAMIC_LIBRARIES) $(STATIC_LIBRARIES)
 $(foreach l, $(LIBRARIES), $(eval lib$(l).so: lib$(l).o))
+$(foreach l, $(LIBRARIES), $(eval $(l): lib$(l).so lib$(l).a))
+else #----------------------------------
+all-libraries: $(STATIC_LIBRARIES)
+$(foreach l, $(LIBRARIES), $(eval $(l): lib$(l).a))
+endif #----------------------------------
+
 $(foreach l, $(LIBRARIES), $(eval lib$(l).a: lib$(l).o))
 $(foreach l, $(LIBRARIES), $(eval lib$(l).o: CFLAGS+=-fPIC))
 $(foreach l, $(LIBRARIES), $(eval lib$(l).o: CXXFLAGS+=-fPIC))
-$(foreach l, $(LIBRARIES), $(eval $(l): lib$(l).so lib$(l).a))
 $(foreach l, $(LIBRARIES), $(eval .PHONY: $(l)))
 
 $(DIRS):
@@ -114,8 +149,7 @@ all: $(TMP_HEADERS)
 %.hpptmp: %.hpp
 	$(call check-cstyle, $<, $@)
 
-$(PROGS): | $(TMP_HEADERS)
-	LD_LIBRARY_PATH=$(LIBFABRIC_LD_LIBRARY_PATHS):$(LIBNDCTL_LD_LIBRARY_PATHS):$(LD_LIBRARY_PATH) $(LINKER) -o $@ $^ $(LDFLAGS) $(LIBS)
+ifeq ($(SPP_OFF),1) #----------------------------------
 
 lib%.o:
 	$(LD) -o $@ -r $^
@@ -125,6 +159,35 @@ $(STATIC_LIBRARIES):
 
 $(DYNAMIC_LIBRARIES):
 	$(LINKER) -shared -o $@ $(LDFLAGS) -Wl,-shared,-soname=$@ $(LIBS) $<
+
+$(PROGS): | $(TMP_HEADERS)
+	LD_LIBRARY_PATH=$(LIBFABRIC_LD_LIBRARY_PATHS):$(LIBNDCTL_LD_LIBRARY_PATHS):$(LD_LIBRARY_PATH) $(LINKER) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+else #----------------------------------
+
+lib%.o:
+	#$(LIBRARIES) $(DIRS)
+	cp $^ $@
+
+libmap%.o:
+	$(AR) rcv $@ $^
+
+libmap.o:
+	$(AR) rcv $@ $^
+
+$(STATIC_LIBRARIES):
+	@if [[ $@ == "libmap"*".a" ]]; then \
+		echo "cp $^ $@"; \
+		cp $^ $@; \
+	else \
+		echo "$(AR) rcv $@ $<"; \
+		$(AR) rcv $@ $<; \
+	fi
+
+$(PROGS): | $(TMP_HEADERS)
+	LD_LIBRARY_PATH=$(LIBFABRIC_LD_LIBRARY_PATHS):$(LIBNDCTL_LD_LIBRARY_PATHS):$(LD_LIBRARY_PATH) $(LINKER) $(CFLAGS) $(BUILD_EXEC_FLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+endif #----------------------------------
 
 .PHONY: all clean clobber cstyle\
 	all-dirs clean-dirs clobber-dirs cstyle-dirs\

@@ -7,7 +7,9 @@
 
 include ../common.inc
 
-DIRS = libpmem libpmemblk libpmemlog libpmemobj librpmem libpmempool pmreorder libpmem2
+#DIRS = libpmem libpmemblk libpmemlog libpmemobj librpmem libpmempool pmreorder libpmem2
+
+DIRS = libpmemobj
 
 include Makefile.inc
 

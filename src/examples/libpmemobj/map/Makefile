@@ -37,6 +37,9 @@ mapcli: mapcli.o libmap.a
 data_store: data_store.o libmap.a
 kv_server: kv_server.o libmap.a
 
+#if SPP_OFF is set, enable PMDK's original functions
+ifeq ($(SPP_OFF),1) #----------------------------------
+
 libmap_ctree.o: map_ctree.o map.o ../tree_map/libctree_map.a
 libmap_btree.o: map_btree.o map.o ../tree_map/libbtree_map.a
 libmap_rtree.o: map_rtree.o map.o ../tree_map/librtree_map.a
@@ -80,3 +83,51 @@ libmap.o: map.o map_ctree.o map_btree.o map_rtree.o map_rbtree.o map_skiplist.o\
 
 ../hashmap/libhashmap_rp.a:
 	$(MAKE) -C ../hashmap hashmap_rp
+
+else #----------------------------------
+
+libmap_ctree.o: map_ctree.o map.o ../tree_map/libctree_map.o
+libmap_btree.o: map_btree.o map.o ../tree_map/libbtree_map.o
+libmap_rtree.o: map_rtree.o map.o ../tree_map/librtree_map.o
+libmap_rbtree.o: map_rbtree.o map.o ../tree_map/librbtree_map.o
+libmap_hashmap_atomic.o: map_hashmap_atomic.o map.o ../hashmap/libhashmap_atomic.o
+libmap_hashmap_tx.o: map_hashmap_tx.o map.o ../hashmap/libhashmap_tx.o
+libmap_hashmap_rp.o: map_hashmap_rp.o map.o ../hashmap/libhashmap_rp.o
+libmap_skiplist.o: map_skiplist.o map.o ../list_map/libskiplist_map.o
+
+libmap.o: map.o map_ctree.o map_btree.o map_rtree.o map_rbtree.o map_skiplist.o\
+	map_hashmap_atomic.o map_hashmap_tx.o map_hashmap_rp.o\
+	../tree_map/libctree_map.o\
+	../tree_map/libbtree_map.o\
+	../tree_map/librtree_map.o\
+	../tree_map/librbtree_map.o\
+	../list_map/libskiplist_map.o\
+	../hashmap/libhashmap_atomic.o\
+	../hashmap/libhashmap_tx.o\
+	../hashmap/libhashmap_rp.o
+
+../tree_map/libctree_map.o:
+	$(MAKE) -C ../tree_map ctree_map
+
+../tree_map/libbtree_map.o:
+	$(MAKE) -C ../tree_map btree_map
+
+../tree_map/librtree_map.o:
+	$(MAKE) -C ../tree_map rtree_map
+
+../tree_map/librbtree_map.o:
+	$(MAKE) -C ../tree_map rbtree_map
+
+../list_map/libskiplist_map.o:
+	$(MAKE) -C ../list_map skiplist_map
+
+../hashmap/libhashmap_atomic.o:
+	$(MAKE) -C ../hashmap hashmap_atomic
+
+../hashmap/libhashmap_tx.o:
+	$(MAKE) -C ../hashmap hashmap_tx
+
+../hashmap/libhashmap_rp.o:
+	$(MAKE) -C ../hashmap hashmap_rp
+
+endif
