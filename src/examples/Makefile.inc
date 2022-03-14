@@ -135,10 +135,6 @@ endif
 
 all: $(TMP_HEADERS)
 
-%.o: %.c $(MAKEFILE_DEPS)
-	$(call check-cstyle, $<)
-	$(CC) -c -o $@ $(CFLAGS) $(INCS) $<
-
 %.o: %.cpp $(MAKEFILE_DEPS)
 	$(call check-cstyle, $<)
 	$(CXX) -c -o $@ $(CXXFLAGS) $(INCS) $<
@@ -150,6 +146,10 @@ all: $(TMP_HEADERS)
 	$(call check-cstyle, $<, $@)
 
 ifeq ($(SPP_OFF),1) #----------------------------------
+
+%.o: %.c $(MAKEFILE_DEPS)
+	$(call check-cstyle, $<)
+	$(CC) -c -o $@ $(CFLAGS) $(INCS) $<
 
 lib%.o:
 	$(LD) -o $@ -r $^
@@ -165,8 +165,13 @@ $(PROGS): | $(TMP_HEADERS)
 
 else #----------------------------------
 
+%.o: %.c $(MAKEFILE_DEPS)
+	$(call check-cstyle, $<)
+	$(CC) -c -o $@.ll $(INCS) -I../ -I../hashmap -I../tree_map -I../list_map -O1 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin -S -emit-llvm $< 
+	opt -O1 -load $(LLVMROOT)/build/lib/LLVMSPP.so -S $@.ll -o $@.transformed.ll
+	$(CC) -c -o $@ $(CFLAGS) $(INCS) $<
+
 lib%.o:
-	#$(LIBRARIES) $(DIRS)
 	cp $^ $@
 
 libmap%.o:
