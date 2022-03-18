@@ -152,16 +152,19 @@ int pmemobj_tx_add_range(PMEMoid oid, uint64_t hoff, size_t size) {
  */
 int pmemobj_tx_add_range_direct(const void *ptr, size_t size) {
 #ifndef SPP_OFF
-    uintptr_t tag = (((uintptr_t)ptr) >> ADDRESS_BITS) + size - 1;
+    // uintptr_t tag = (((uintptr_t)ptr) >> ADDRESS_BITS) + size - 1;
+    uintptr_t tag = ((((uintptr_t)ptr) & TAG_CLEAN) >> ADDRESS_BITS) + size - 1;
     if (tag & MAX_OBJ_SIZE) {
+        printf("%s : overflow in adding range\n", __func__);
         _exit(1);
     }
-    uintptr_t ptrval = ((((uintptr_t)ptr)<<(TAG_BITS + OVERFLOW_BITS))>>(TAG_BITS + OVERFLOW_BITS));
+    uintptr_t ptrval = (uintptr_t)ptr & PTR_CLEAN;
+    // ((((uintptr_t)ptr)<<(TAG_BITS + OVERFLOW_BIT))>>(TAG_BITS + OVERFLOW_BIT));
     
     return pmemobj_tx_add_range_direct_unsafe((void*)ptrval, size);
-#endif
-
+#else
     return pmemobj_tx_add_range_direct_unsafe(ptr, size);
+#endif
 }
 
 /* 

@@ -14,6 +14,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #ifdef DEBUG
 #include <assert.h>
@@ -106,14 +107,18 @@ typedef struct pmemobjpool PMEMobjpool;
  * Delta pointer structure
  */
 #ifndef TAG_BITS
-#define TAG_BITS 24 //16MB maximum allocation size - 1TB address space
+#define TAG_BITS 26 //64MB maximum allocation size - 128GB max pool_space
 #endif
 
-#define OVERFLOW_BITS 1
-#define ADDRESS_BITS (PTR_SIZE - TAG_BITS - OVERFLOW_BITS)
+#define PM_PTR_BIT 1
+#define OVERFLOW_BIT 1
+#define ADDRESS_BITS (PTR_SIZE - TAG_BITS - OVERFLOW_BIT - PM_PTR_BIT)
 
-#define OVERFLOW_SET (~((uint64_t)1 << (PTR_SIZE - 1)))
+#define PM_PTR_APPLY ((uint64_t)1 << (PTR_SIZE - 1))
+#define OVERFLOW_SET (~((uint64_t)1 << (PTR_SIZE - 1 - PM_PTR_BIT)))
 
+#define PTR_CLEAN ((1ULL << ADDRESS_BITS) - 1)
+#define TAG_CLEAN ~PTR_CLEAN & ~PM_PTR_APPLY
 #define MAX_OBJ_SIZE ((uint64_t)1 << TAG_BITS)
 
 /*
@@ -221,7 +226,8 @@ pmemobj_direct_inline(PMEMoid oid)
 
 	//Take the two's complement of the size and place it in the tag
 	uint64_t tag = (~oid.size + 1) << ADDRESS_BITS;	
-	return (void *)( ( ((uintptr_t)cache->pop + oid.off) | tag ) & OVERFLOW_SET);
+	// printf("%s %lx\n",__func__, ((((uintptr_t)cache->pop + oid.off) | tag ) & OVERFLOW_SET) | PM_PTR_APPLY);
+	return (void *)(((((uintptr_t)cache->pop + oid.off) | tag ) & OVERFLOW_SET) | PM_PTR_APPLY);
 //#endif
 
 //	return (void *)((uintptr_t)cache->pop + oid.off);
