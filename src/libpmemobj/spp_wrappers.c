@@ -9,6 +9,12 @@
 #include "os.h"
 #include "tx.h"
 
+#if defined(DEBUG) && !defined(SPP_OFF)
+#  define size_check(x) assert(x < MAX_OBJ_SIZE)
+#else
+#  define size_check(x) 
+#endif
+
 /* does not need to change as we trust pmdk code */
 PMEMobjpool *pmemobj_open(const char *path, const char *given_layout) {
     return pmemobj_open_unsafe(path, given_layout);
@@ -26,11 +32,13 @@ void pmemobj_close(PMEMobjpool *pop) {
 
 /* pmemobj_root_construct unsafe version*/
 PMEMoid pmemobj_root(PMEMobjpool *pop, size_t size) {
+    size_check(size);
     return pmemobj_root_unsafe(pop, size);
 }
 
 /* tx_alloc_common unsafe version */
 PMEMoid pmemobj_tx_alloc(size_t size, uint64_t type_num) {
+    size_check(size);
     return pmemobj_tx_alloc_unsafe(size, type_num);
 }
 
@@ -46,28 +54,33 @@ int pmemobj_tx_xfree(PMEMoid oid, uint64_t flags) {
 
 /* tx_alloc_common unsafe version */
 PMEMoid pmemobj_tx_zalloc(size_t size, uint64_t type_num) {
+    size_check(size);
     return pmemobj_tx_zalloc_unsafe(size, type_num);
 }
 
 /* does not need to change as usable_size is independent by the object size */
 size_t pmemobj_alloc_usable_size(PMEMoid oid) {
+    size_check(oid.size);
     return pmemobj_alloc_usable_size_unsafe(oid);
 }  
 
 /* does not need to change as type_num is independent by the size */
 uint64_t pmemobj_type_num(PMEMoid oid) {
+    size_check(oid.size);
     return pmemobj_type_num_unsafe(oid);
 }
 
 /* obj_alloc_construct unsafe version */
 int pmemobj_alloc(PMEMobjpool *pop, PMEMoid *oidp, size_t size,
 	uint64_t type_num, pmemobj_constr constructor, void *arg) {
+    size_check(size);
     return pmemobj_alloc_unsafe(pop, oidp, size, type_num, constructor, arg);
 }
 
 /* obj_alloc_construct unsafe version */
 int pmemobj_zalloc(PMEMobjpool *pop, PMEMoid *oidp, size_t size,
     uint64_t type_num) {
+    size_check(size);
     return pmemobj_zalloc_unsafe(pop, oidp, size, type_num);
 }
 
@@ -88,32 +101,38 @@ PMEMoid pmemobj_next(PMEMoid oid) {
 
 /* tx_realloc_common unsafe version */
 PMEMoid pmemobj_tx_realloc(PMEMoid oid, size_t size, uint64_t type_num) {
+    size_check(size);
     return pmemobj_tx_realloc_unsafe(oid, size, type_num);
 }
 
 /* tx_realloc_common unsafe version */
 PMEMoid pmemobj_tx_zrealloc(PMEMoid oid, size_t size, uint64_t type_num) {
+    size_check(size);
     return pmemobj_tx_zrealloc_unsafe(oid, size, type_num);
 }
 
 /* obj_realloc_common unsafe version */
 int pmemobj_realloc(PMEMobjpool *pop, PMEMoid *oidp, size_t size, uint64_t type_num) {
+    size_check(size);
     return pmemobj_realloc_unsafe(pop, oidp, size, type_num);
 }
 
 /* obj_realloc_common unsafe version */
 int pmemobj_zrealloc(PMEMobjpool *pop, PMEMoid *oidp, size_t size, uint64_t type_num) {
+    size_check(size);
     return pmemobj_zrealloc_unsafe(pop, oidp, size, type_num);
 }
 
 /* tx_alloc_common unsafe version */
 PMEMoid pmemobj_tx_xalloc(size_t size, uint64_t type_num, uint64_t flags) {
+    size_check(size);
     return pmemobj_tx_xalloc_unsafe(size, type_num, flags);
 }
 
 /* obj_alloc_construct unsafe version */
 int pmemobj_xalloc(PMEMobjpool *pop, PMEMoid *oidp, size_t size,
 	uint64_t type_num, uint64_t flags, pmemobj_constr constructor, void *arg) {
+    size_check(size);
     return pmemobj_xalloc_unsafe(pop, oidp, size, type_num, flags, constructor, arg);
 }
 

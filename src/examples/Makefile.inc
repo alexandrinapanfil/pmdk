@@ -26,6 +26,8 @@ endif
 INCS = -I$(INCDIR) -I. -I$(TOP_SRC)/examples $(OS_INCS)
 LIBS += $(OS_LIBS) $(LIBUUID)
 
+OPT_LEVEL:=-O1
+
 #if SPP_OFF is set, enable PMDK's original functions
 ifeq ($(SPP_OFF),1) #----------------------------------
 CFLAGS += -DSPP_OFF
@@ -50,12 +52,11 @@ WRAP_LIST:=-Wl,-wrap,free -Wl,-wrap,strcpy -Wl,-wrap,strcmp \
            -Wl,-wrap,strtol -Wl,-wrap,strlen -Wl,-wrap,strchrnul \
            -Wl,-wrap,strcat -Wl,-wrap,snprintf \
            -Wl,-wrap,memcpy -Wl,-wrap,memset -Wl,-wrap,memmove
-OPT_LEVEL:=-O1
 FORTIFY:=-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
 CFLAGS += -flto -fno-builtin $(OPT_LEVEL) $(FORTIFY)
 CFLAGS += -Xclang -load -Xclang $(LLVMROOT)/build/lib/LLVMSPP.so
-BUILD_EXEC_FLAGS := $(WRAP_LIST) $(SPPLIBOBJ)/wrappers.o -Xlinker "${SPPLIBOBJ}/spp_hookobj.o"
+BUILD_EXEC_FLAGS := $(WRAP_LIST) $(SPPLIBOBJ)/wrappers_spp.o -Xlinker "${SPPLIBOBJ}/spp.o"
 
 INCS += -I$(SPPLIBSRC)/spp.h
 LDFLAGS += -fuse-ld=gold
@@ -149,19 +150,19 @@ ifeq ($(SPP_OFF),1) #----------------------------------
 
 %.o: %.c $(MAKEFILE_DEPS)
 	$(call check-cstyle, $<)
-	$(CC) -c -o $@ $(CFLAGS) $(INCS) $<
+	$(CC) -c $(OPT_LEVEL) -o $@ $(CFLAGS) $(INCS) $<
 
 lib%.o:
-	$(LD) -o $@ -r $^
+	$(LD) $(OPT_LEVEL) -o $@ -r $^
 
 $(STATIC_LIBRARIES):
 	$(AR) rv $@ $<
 
 $(DYNAMIC_LIBRARIES):
-	$(LINKER) -shared -o $@ $(LDFLAGS) -Wl,-shared,-soname=$@ $(LIBS) $<
+	$(LINKER) $(OPT_LEVEL) -shared -o $@ $(LDFLAGS) -Wl,-shared,-soname=$@ $(LIBS) $<
 
 $(PROGS): | $(TMP_HEADERS)
-	LD_LIBRARY_PATH=$(LIBFABRIC_LD_LIBRARY_PATHS):$(LIBNDCTL_LD_LIBRARY_PATHS):$(LD_LIBRARY_PATH) $(LINKER) -o $@ $^ $(LDFLAGS) $(LIBS)
+	LD_LIBRARY_PATH=$(LIBFABRIC_LD_LIBRARY_PATHS):$(LIBNDCTL_LD_LIBRARY_PATHS):$(LD_LIBRARY_PATH) $(LINKER) $(OPT_LEVEL) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 else #----------------------------------
 

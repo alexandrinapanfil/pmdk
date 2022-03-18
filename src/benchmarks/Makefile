@@ -147,7 +147,7 @@ LIBMAP=$(LIBMAP_DIR)/libmap.a
 OBJS += pmemobj.o
 
 ifeq ($(DEBUG),)
-CXXFLAGS += -O3
+CXXFLAGS += -O1
 LIBS_PATH=../nondebug
 else
 CXXFLAGS += -ggdb
@@ -191,8 +191,9 @@ OPT_LEVEL:=-O1
 FORTIFY:=-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
 CXXFLAGS += -flto -fno-builtin $(OPT_LEVEL) $(FORTIFY)
+PROGFLAGS := $(CXXFLAGS)
 CXXFLAGS += -Xclang -load -Xclang $(LLVMROOT)/build/lib/LLVMSPP.so
-BUILD_EXEC_FLAGS := $(WRAP_LIST) $(SPPLIBOBJ)/wrappers.o -Xlinker "${SPPLIBOBJ}/spp_hookobj.o"
+BUILD_EXEC_FLAGS := $(WRAP_LIST) $(SPPLIBOBJ)/wrappers_spp.o -Xlinker "${SPPLIBOBJ}/spp.o"
 
 INCS += -I$(SPPLIBSRC)/spp.h
 LDFLAGS += -fuse-ld=gold
@@ -216,6 +217,14 @@ ifeq ($(SPP_OFF),1) #----------------------------------
 $(BENCHMARK): $(TMP_HEADERS) $(OBJS) $(LIBMAP)
 	$(CXX) -o $@ $(LDFLAGS) $(OBJS) $(LIBMAP) $(LIBS)
 else #----------------------------------
+
+pmembench.o: pmembench.cpp Makefile
+	$(call check-cstyle, $<)
+	@mkdir -p .deps
+	$(CXX) -MD -c -o $@ $(PROGFLAGS) $(call coverage-path, $<)
+	$(call nm=$(NM) check-os, $@, $<)
+	$(create-deps)
+
 %.o: %.cpp Makefile
 	$(call check-cstyle, $<)
 	@mkdir -p .deps
@@ -224,7 +233,7 @@ else #----------------------------------
 	$(create-deps)
 
 $(BENCHMARK): $(TMP_HEADERS) $(OBJS) $(LIBMAP)
-	$(CXX) $(CXXFLAGS) $(BUILD_EXEC_FLAGS) -o $@ $(LDFLAGS) $(OBJS) $(LIBMAP) $(LIBS)
+	$(CXX) -flto -fno-builtin $(OPT_LEVEL) $(FORTIFY) $(BUILD_EXEC_FLAGS) -o $@ $(LDFLAGS) $(OBJS) $(LIBMAP) $(LIBS)
 endif #----------------------------------
 
 $(LIBMAP):
