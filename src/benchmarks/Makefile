@@ -222,6 +222,7 @@ pmembench.o: pmembench.cpp Makefile
 	$(call check-cstyle, $<)
 	@mkdir -p .deps
 	$(CXX) -MD -c -o $@ $(PROGFLAGS) $(call coverage-path, $<)
+	$(CXX) -S -emit-llvm -c -o $@.ll $(PROGFLAGS) $(call coverage-path, $<)
 	$(call nm=$(NM) check-os, $@, $<)
 	$(create-deps)
 
@@ -229,6 +230,7 @@ pmembench.o: pmembench.cpp Makefile
 	$(call check-cstyle, $<)
 	@mkdir -p .deps
 	$(CXX) -MD -c -o $@ $(CXXFLAGS) $(call coverage-path, $<)
+	$(CXX) -S -emit-llvm -c -o $@.ll $(CXXFLAGS) $(call coverage-path, $<)
 	$(call nm=$(NM) check-os, $@, $<)
 	$(create-deps)
 
