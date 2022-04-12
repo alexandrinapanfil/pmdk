@@ -28,6 +28,8 @@
 #include "tx.h"
 #include "sys_util.h"
 
+#include <stdio.h>
+
 /*
  * The variable from which the config is directly loaded. The string
  * cannot contain any comments or extraneous white characters.
@@ -243,6 +245,9 @@ pmemobj_oid(const void *addr)
 #ifdef SPP_OFF
 	PMEMoid oid = {pop->uuid_lo, (uintptr_t)addr - (uintptr_t)pop};
 #else
+#ifdef DEBUG
+	printf("needs to be fixed %s\n",__func__);
+#endif
 	PMEMoid oid = {pop->uuid_lo, (uintptr_t)addr - (uintptr_t)pop, 0};
 #endif
 
