@@ -190,7 +190,8 @@ WRAP_LIST:=-Wl,-wrap,free -Wl,-wrap,strcpy -Wl,-wrap,strcmp \
 OPT_LEVEL:=-O1
 FORTIFY:=-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
-CXXFLAGS += -flto -fno-builtin $(OPT_LEVEL) $(FORTIFY)
+# CXXFLAGS += -flto -fno-builtin $(OPT_LEVEL) $(FORTIFY)
+CXXFLAGS += -flto $(OPT_LEVEL) $(FORTIFY)
 PROGFLAGS := $(CXXFLAGS)
 CXXFLAGS += -Xclang -load -Xclang $(LLVMROOT)/build/lib/LLVMSPP.so
 BUILD_EXEC_FLAGS := $(WRAP_LIST) $(SPPLIBOBJ)/wrappers_spp.o -Xlinker "${SPPLIBOBJ}/spp.o"
@@ -235,7 +236,7 @@ pmembench.o: pmembench.cpp Makefile
 	$(create-deps)
 
 $(BENCHMARK): $(TMP_HEADERS) $(OBJS) $(LIBMAP)
-	$(CXX) -flto -fno-builtin $(OPT_LEVEL) $(FORTIFY) $(BUILD_EXEC_FLAGS) -o $@ $(LDFLAGS) $(OBJS) $(LIBMAP) $(LIBS)
+	$(CXX) -flto $(OPT_LEVEL) $(FORTIFY) $(BUILD_EXEC_FLAGS) -o $@ $(LDFLAGS) $(OBJS) $(LIBMAP) $(LIBS)
 endif #----------------------------------
 
 $(LIBMAP):

@@ -54,7 +54,7 @@ WRAP_LIST:=-Wl,-wrap,free -Wl,-wrap,strcpy -Wl,-wrap,strcmp \
            -Wl,-wrap,memcpy -Wl,-wrap,memset -Wl,-wrap,memmove
 FORTIFY:=-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
-CFLAGS += -flto -fno-builtin $(OPT_LEVEL) $(FORTIFY)
+CFLAGS += -flto $(OPT_LEVEL) $(FORTIFY)
 CFLAGS += -Xclang -load -Xclang $(LLVMROOT)/build/lib/LLVMSPP.so
 BUILD_EXEC_FLAGS := $(WRAP_LIST) $(SPPLIBOBJ)/wrappers_spp.o -Xlinker "${SPPLIBOBJ}/spp.o"
 
@@ -168,7 +168,7 @@ else #----------------------------------
 
 %.o: %.c $(MAKEFILE_DEPS)
 	$(call check-cstyle, $<)
-	$(CC) -c -o $@.ll $(INCS) -I../ -I../hashmap -I../tree_map -I../list_map -O1 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-builtin -S -emit-llvm $< 
+	$(CC) -c -o $@.ll $(INCS) -I../ -I../hashmap -I../tree_map -I../list_map -O1 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -S -emit-llvm $< 
 	opt -O1 -load $(LLVMROOT)/build/lib/LLVMSPP.so -S $@.ll -o $@.transformed.ll
 	$(CC) -c -o $@ $(CFLAGS) $(INCS) $<
 
