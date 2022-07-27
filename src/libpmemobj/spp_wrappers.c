@@ -187,7 +187,27 @@ int pmemobj_tx_add_range_direct(const void *ptr, size_t size) {
  * *ptr is derived from pmemobj_direct function -- compiler pass is responsible for the handling 
  */
 int pmemobj_tx_xadd_range_direct(const void *ptr, size_t size, uint64_t flags) {
+#ifndef SPP_OFF
+    // uintptr_t tag = (((uintptr_t)ptr) >> ADDRESS_BITS) + size - 1;
+    uintptr_t tag = ((((uintptr_t)ptr) & TAG_CLEAN) >> ADDRESS_BITS) + (size - 1);
+    uintptr_t overflow_bit = (tag << ADDRESS_BITS) & OVERFLOW_KEEP; // keep the new overflow bit
+    if (overflow_bit)
+    {
+        printf("%s : overflow in adding range\n", __func__);
+        _exit(1);
+    }
+
+    uintptr_t ptrval = (uintptr_t)ptr & PTR_CLEAN; // clean previous tag
+    // ptrval = ptrval | overflow_bit; // apply the new overflow bit
+
+#ifdef DEBUG
+    printf("tag:%lx overflow_bit:%lx ptrval:%lx\n", tag, overflow_bit, ptrval);
+#endif
+
+    return pmemobj_tx_xadd_range_direct_unsafe((void*)ptrval, size, flags);
+#else
     return pmemobj_tx_xadd_range_direct_unsafe(ptr, size, flags);
+#endif
 }
 
 /* 
