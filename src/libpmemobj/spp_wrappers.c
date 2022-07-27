@@ -142,13 +142,13 @@ int pmemobj_xalloc(PMEMobjpool *pop, PMEMoid *oidp, size_t size,
     return pmemobj_xalloc_unsafe(pop, oidp, size, type_num, flags, constructor, arg);
 }
 
-/* TODO: check the snapshotting range in PMDK runtime if it's not already done */
+/* check the snapshotting range in PMDK runtime if it's not already done */
 int pmemobj_tx_xadd_range(PMEMoid oid, uint64_t hoff, size_t size, uint64_t flags) {
     snapshot_check(oid, hoff, size);
     return pmemobj_tx_xadd_range_unsafe(oid, hoff, size, flags);
 }
 
-/* TODO: check the snapshotting range in PMDK runtime if it's not already done */
+/* check the snapshotting range in PMDK runtime if it's not already done */
 int pmemobj_tx_add_range(PMEMoid oid, uint64_t hoff, size_t size) {
     snapshot_check(oid, hoff, size);
     return pmemobj_tx_add_range_unsafe(oid, hoff, size);
@@ -163,16 +163,14 @@ int pmemobj_tx_add_range_direct(const void *ptr, size_t size) {
     // uintptr_t tag = (((uintptr_t)ptr) >> ADDRESS_BITS) + size - 1;
     uintptr_t tag = ((((uintptr_t)ptr) & TAG_CLEAN) >> ADDRESS_BITS) + (size - 1);
     uintptr_t overflow_bit = (tag << ADDRESS_BITS) & OVERFLOW_KEEP; // keep the new overflow bit
-
-#ifdef DEBUG
-    if (tag & MAX_OBJ_SIZE) {
+    if (overflow_bit)
+    {
         printf("%s : overflow in adding range\n", __func__);
         _exit(1);
     }
-#endif
 
     uintptr_t ptrval = (uintptr_t)ptr & PTR_CLEAN; // clean previous tag
-    ptrval = ptrval | overflow_bit; // apply the new overflow bit
+    // ptrval = ptrval | overflow_bit; // apply the new overflow bit
 
 #ifdef DEBUG
     printf("tag:%lx overflow_bit:%lx ptrval:%lx\n", tag, overflow_bit, ptrval);
