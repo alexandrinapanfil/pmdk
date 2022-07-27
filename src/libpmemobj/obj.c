@@ -238,20 +238,25 @@ obj_pool_init(void)
 PMEMoid
 pmemobj_oid(const void *addr)
 {
-	PMEMobjpool *pop = pmemobj_pool_by_ptr(addr);
+#ifndef SPP_OFF
+	const void* pm_addr = (void*)((uintptr_t)addr & PTR_CLEAN);
+	PMEMobjpool *pop = pmemobj_pool_by_ptr(pm_addr);
 	if (pop == NULL)
 		return OID_NULL;
 
-#ifdef SPP_OFF
-	PMEMoid oid = {pop->uuid_lo, (uintptr_t)addr - (uintptr_t)pop};
-#else
-#ifdef DEBUG
-	printf("needs to be fixed %s\n",__func__);
-#endif
-	PMEMoid oid = {pop->uuid_lo, (uintptr_t)addr - (uintptr_t)pop, 0};
-#endif
-
+	uintptr_t tag = ((((uintptr_t)addr) & TAG_CLEAN) >> ADDRESS_BITS);
+	uint64_t size = MAX_TAG_VAL - tag + 1; // +1 for the size calculation since tag considers offsets
+	printf("%s %p %lx %lx %ld\n", __func__, addr, MAX_TAG_VAL, tag, size);
+	
+	PMEMoid oid = {pop->uuid_lo, (uintptr_t)pm_addr - (uintptr_t)pop, size};
 	return oid;
+#else
+	PMEMobjpool *pop = pmemobj_pool_by_ptr(addr);
+	if (pop == NULL)
+		return OID_NULL;
+	PMEMoid oid = {pop->uuid_lo, (uintptr_t)addr - (uintptr_t)pop};
+	return oid;
+#endif
 }
 
 /*

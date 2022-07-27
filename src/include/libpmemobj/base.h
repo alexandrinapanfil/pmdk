@@ -120,6 +120,7 @@ typedef struct pmemobjpool PMEMobjpool;
 
 #define PTR_CLEAN ((1ULL << ADDRESS_BITS) - 1)
 #define TAG_CLEAN (~PTR_CLEAN & ~PM_PTR_APPLY)
+#define MAX_TAG_VAL (((uint64_t)1 << TAG_BITS) - 1)
 #define MAX_OBJ_SIZE ((uint64_t)1 << TAG_BITS)
 
 /*
