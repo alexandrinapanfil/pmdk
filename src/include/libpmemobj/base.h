@@ -116,9 +116,10 @@ typedef struct pmemobjpool PMEMobjpool;
 
 #define PM_PTR_APPLY ((uint64_t)1 << (PTR_SIZE - 1))
 #define OVERFLOW_SET (~((uint64_t)1 << (PTR_SIZE - 1 - PM_PTR_BIT)))
+#define OVERFLOW_KEEP (((uint64_t)1 << (PTR_SIZE - PM_PTR_BIT - OVERFLOW_BIT)))
 
 #define PTR_CLEAN ((1ULL << ADDRESS_BITS) - 1)
-#define TAG_CLEAN ~PTR_CLEAN & ~PM_PTR_APPLY
+#define TAG_CLEAN (~PTR_CLEAN & ~PM_PTR_APPLY)
 #define MAX_OBJ_SIZE ((uint64_t)1 << TAG_BITS)
 
 /*

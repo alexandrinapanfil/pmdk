@@ -12,7 +12,13 @@
 #if defined(DEBUG) && !defined(SPP_OFF)
 #  define size_check(x) assert(x < MAX_OBJ_SIZE)
 #else
-#  define size_check(x) 
+#  define size_check(x)
+#endif
+
+#if !defined(SPP_OFF)
+#  define snapshot_check(oid, hoff, size) assert(oid.size >= (hoff + size) && "spp add_range overflow")
+#else
+#  define snapshot_check(oid, hoff, size)
 #endif
 
 /* does not need to change as we trust pmdk code */
@@ -138,11 +144,13 @@ int pmemobj_xalloc(PMEMobjpool *pop, PMEMoid *oidp, size_t size,
 
 /* TODO: check the snapshotting range in PMDK runtime if it's not already done */
 int pmemobj_tx_xadd_range(PMEMoid oid, uint64_t hoff, size_t size, uint64_t flags) {
+    snapshot_check(oid, hoff, size);
     return pmemobj_tx_xadd_range_unsafe(oid, hoff, size, flags);
 }
 
 /* TODO: check the snapshotting range in PMDK runtime if it's not already done */
 int pmemobj_tx_add_range(PMEMoid oid, uint64_t hoff, size_t size) {
+    snapshot_check(oid, hoff, size);
     return pmemobj_tx_add_range_unsafe(oid, hoff, size);
 }
 
@@ -153,14 +161,23 @@ int pmemobj_tx_add_range(PMEMoid oid, uint64_t hoff, size_t size) {
 int pmemobj_tx_add_range_direct(const void *ptr, size_t size) {
 #ifndef SPP_OFF
     // uintptr_t tag = (((uintptr_t)ptr) >> ADDRESS_BITS) + size - 1;
-    uintptr_t tag = ((((uintptr_t)ptr) & TAG_CLEAN) >> ADDRESS_BITS) + size - 1;
+    uintptr_t tag = ((((uintptr_t)ptr) & TAG_CLEAN) >> ADDRESS_BITS) + (size - 1);
+    uintptr_t overflow_bit = (tag << ADDRESS_BITS) & OVERFLOW_KEEP; // keep the new overflow bit
+
+#ifdef DEBUG
     if (tag & MAX_OBJ_SIZE) {
         printf("%s : overflow in adding range\n", __func__);
         _exit(1);
     }
-    uintptr_t ptrval = (uintptr_t)ptr & PTR_CLEAN;
-    // ((((uintptr_t)ptr)<<(TAG_BITS + OVERFLOW_BIT))>>(TAG_BITS + OVERFLOW_BIT));
-    
+#endif
+
+    uintptr_t ptrval = (uintptr_t)ptr & PTR_CLEAN; // clean previous tag
+    ptrval = ptrval | overflow_bit; // apply the new overflow bit
+
+#ifdef DEBUG
+    printf("tag:%lx overflow_bit:%lx ptrval:%lx\n", tag, overflow_bit, ptrval);
+#endif
+
     return pmemobj_tx_add_range_direct_unsafe((void*)ptrval, size);
 #else
     return pmemobj_tx_add_range_direct_unsafe(ptr, size);
