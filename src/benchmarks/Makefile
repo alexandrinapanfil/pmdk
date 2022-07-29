@@ -186,7 +186,14 @@ WRAP_LIST:=-Wl,-wrap,free -Wl,-wrap,strcpy -Wl,-wrap,strcmp \
            -Wl,-wrap,memchr -Wl,-wrap,strchr -Wl,-wrap,strncat \
            -Wl,-wrap,strtol -Wl,-wrap,strlen -Wl,-wrap,strchrnul \
            -Wl,-wrap,strcat -Wl,-wrap,snprintf \
-           -Wl,-wrap,memcpy -Wl,-wrap,memset -Wl,-wrap,memmove
+           -Wl,-wrap,memcpy -Wl,-wrap,memset -Wl,-wrap,memmove \
+           -Wl,-wrap,pmem_memmove_persist -Wl,-wrap,pmem_memcpy_persist \
+           -Wl,-wrap,pmem_memmove_nodrain -Wl,-wrap,pmem_memcpy_nodrain \
+           -Wl,-wrap,pmem_memmove -Wl,-wrap,pmem_memcpy \
+           -Wl,-wrap,pmem_memset_nodrain -Wl,-wrap,pmem_memset \
+           -Wl,-wrap,pmem_memset_persist -Wl,-wrap,pmemobj_memcpy \
+           -Wl,-wrap,pmemobj_memcpy_persist -Wl,-wrap,pmemobj_memmove \
+           -Wl,-wrap,pmemobj_memset -Wl,-wrap,pmemobj_memset_persist
 OPT_LEVEL:=-O1
 FORTIFY:=-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 
@@ -198,6 +205,7 @@ BUILD_EXEC_FLAGS := $(WRAP_LIST) $(SPPLIBOBJ)/wrappers_spp.o -Xlinker "${SPPLIBO
 
 INCS += -I$(SPPLIBSRC)/spp.h
 LDFLAGS += -fuse-ld=gold
+LDFLAGS += -lpmem
 endif #----------------------------------
 
 %.htmp: %.h
