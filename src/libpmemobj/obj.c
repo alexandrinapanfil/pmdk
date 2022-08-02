@@ -246,7 +246,7 @@ pmemobj_oid(const void *addr)
 
 	uintptr_t tag = ((((uintptr_t)addr) & TAG_CLEAN) >> ADDRESS_BITS);
 	uint64_t size = MAX_TAG_VAL - tag + 1; // +1 for the size calculation since tag considers offsets
-	printf("%s %p %lx %lx %ld\n", __func__, addr, MAX_TAG_VAL, tag, size);
+	// printf("%s %p %lx %lx %ld\n", __func__, addr, MAX_TAG_VAL, tag, size);
 	
 	PMEMoid oid = {pop->uuid_lo, (uintptr_t)pm_addr - (uintptr_t)pop, size};
 	return oid;
